@@ -1,0 +1,6 @@
+data/
+log/
+.idea/
+accountConfig.py
+*.pyc
+__pycache__
