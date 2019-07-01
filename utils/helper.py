@@ -12,11 +12,11 @@ import uuid
 import requests
 
 
-COIN_TYPE_BTC_CNY = "btcusdt"
-COIN_TYPE_LTC_CNY = "ltcusdt"
+COIN_TYPE_BTC_CNY = "btctwd"
+COIN_TYPE_LTC_CNY = "ltctwd"
 HUOBI_COIN_TYPE_BTC = 1
 HUOBI_COIN_TYPE_LTC = 2
-COIN_TYPE_CNY = "cny"
+COIN_TYPE_CNY = "twd"
 COIN_TYPE_USD = "usd"
 
 coinTypeStructure = {

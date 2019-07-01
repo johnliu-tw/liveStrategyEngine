@@ -77,7 +77,7 @@ class OKCoinSpot:
         params['orderType'] = 1
         params['contractId'] = contractId
         if price:
-            params['price'] = downRound(price, 2)
+            params['price'] = int(price)
         if amount:
             params['quantity'] = amount
         
@@ -124,7 +124,8 @@ class OKCoinSpot:
 
         time.sleep(1)
         order_info = httpGet(self.__url, ORDER_INFO_RESOURCE, url_params)
-        if order_info == "Timeout" or order_info['code'] == 2006:
+        print(order_info['msg'])
+        if order_info == "Timeout" or order_info['code'] == 2006 or order_info['msg'] == 'order no exist':
             ts = int(time.time()*1000)
             url_params['apiTimeStamp'] = ts
             url_params['apiSign'] = buildMySign(url_params, self.__secretkey)
@@ -164,6 +165,6 @@ class OKCoinSpot:
     # okcoin上比特币的交易数量是0.01的整数倍，莱特币交易数量是0.1的整数倍
     def getMinimumOrderQty(self, symbol):
         if symbol == COIN_TYPE_BTC_CNY:
-            return 0.01 * 1
+            return 0.005
         else:
-            return 0.0001 * 1
+            return 0.0001

@@ -235,7 +235,7 @@ class BaseLiveStrategyEngine(object):
 
         retry_time = 0
         while retry_time < self.huobi_order_query_retry_maximum_times and order_info["status"] != 2:
-            self.timeLog("等待%f秒直至订单完成" % self.orderWaitingTime)
+            self.timeLog("等待 1 秒直至订单完成" % self.orderWaitingTime)
             time.sleep(self.orderWaitingTime)
             order_info = self.huobiService.getOrderInfo(coin_type, order_id,
                                                         helper.coinTypeStructure[self.coinMarketType]["huobi"][
@@ -286,7 +286,7 @@ class BaseLiveStrategyEngine(object):
 
         retry_time = 0
         while retry_time < self.huobi_order_query_retry_maximum_times and order_info["status"] != 2:
-            self.timeLog("等待%f秒直至订单完成" % self.orderWaitingTime)
+            self.timeLog("等待 1 秒直至订单完成" % self.orderWaitingTime)
             time.sleep(self.orderWaitingTime)
             order_info = self.huobiService.getOrderInfo(coin_type, order_id,
                                                         helper.coinTypeStructure[self.coinMarketType]["huobi"][

@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from banZhuan.statArbStrategy import *
+import os
+import sys
 
 
 ###############################################################
@@ -28,12 +30,12 @@ class FixedSpreadSignalGenerator(StatArbSignalGenerator):
 
     # 判断开仓、平仓
     def in_or_out(self, ref_price):
-        self.timeLog("bitasset買，火幣賣: %s。 火幣買，bitasset 賣 %s" % (str(self.spread2List[-1]),  str(self.spread1List[-1])))
+        self.timeLog("bitasset買，bito賣: %s。 bito買，bitasset 賣 %s" % (str(self.spread2List[-1]),  str(self.spread1List[-1])))
 
-        # if self.spread1List[-1] / ref_price > self.open_diff:  # huobi > okcoin
-        #     return 2  # sell okcoin, buy huobi
-        # elif self.spread2List[-1] / ref_price > self.open_diff:  # okcoin > huobi
-        #     return 1  # buy okcoin, sell huobi
+        if self.spread1List[-1] / ref_price > self.open_diff:  # huobi > okcoin
+            return 2  # sell okcoin, buy huobi
+        elif self.spread2List[-1] / ref_price > self.open_diff:  # okcoin > huobi
+            return 1  # buy okcoin, sell huobi
 
         return 0  # no action
 
@@ -61,10 +63,10 @@ class FixedSpreadSignalGenerator(StatArbSignalGenerator):
                                                         depth_size="step1")
                 # 查询okcoin第一档深度数据
                 okcoinDepth = self.OKCoinService.depth(helper.coinTypeStructure[self.coinMarketType]["okcoin"]["coin_type"])
-                huobi_sell_1_price = huobiDepth["tick"]['asks'][0][0]
-                huobi_sell_1_qty = huobiDepth["tick"]['asks'][0][1]
-                huobi_buy_1_price = huobiDepth["tick"]['bids'][0][0]
-                huobi_buy_1_qty = huobiDepth["tick"]['bids'][0][1]
+                huobi_sell_1_price = float(huobiDepth['asks'][0]['price'])
+                huobi_sell_1_qty = float(huobiDepth['asks'][0]['amount'])
+                huobi_buy_1_price = float(huobiDepth['bids'][0]['price'])
+                huobi_buy_1_qty = float(huobiDepth['bids'][0]['amount'])
                 okcoin_sell_1_price = okcoinDepth["asks"][0][0]
                 okcoin_sell_1_qty = okcoinDepth["asks"][0][1]
                 okcoin_buy_1_price = okcoinDepth["bids"][0][0]
@@ -128,9 +130,8 @@ class FixedSpreadSignalGenerator(StatArbSignalGenerator):
                     if self.maximum_qty_multiplier is not None:
                         Qty = min(Qty, max(self.huobi_min_quantity, self.okcoin_min_quantity) * self.maximum_qty_multiplier)
                     # 每次搬砖前要检查是否有足够security和cash
-                    Qty = min(Qty, accountInfo[helper.coinTypeStructure[self.coinMarketType]["huobi"]["coin_str"]],
-                            helper.downRound(accountInfo[helper.coinTypeStructure[self.coinMarketType]["okcoin"][
-                                "market_str"]] / okcoin_sell_1_price, 4))
+                    Qty = min(huobi_buy_1_qty, accountInfo[helper.coinTypeStructure[self.coinMarketType]["huobi"]["coin_str"]],
+                            accountInfo[helper.coinTypeStructure[self.coinMarketType]["okcoin"]["market_str"]])
                     Qty = helper.downRound(Qty, 4)
                     Qty = helper.getRoundedQuantity(Qty, self.coinMarketType)
                     if Qty < self.huobi_min_quantity or Qty < self.okcoin_min_quantity:
@@ -142,15 +143,9 @@ class FixedSpreadSignalGenerator(StatArbSignalGenerator):
                         continue
                     else:
                         # step1 先處理 bita 的買
-                        if Qty < self.okcoin_min_quantity * 1.05:
-                            executed_qty = self.buy_market(self.coinMarketType, str(0.0002 * 1.05),
-                                            exchange="okcoin",
-                                            sell_1_price=okcoin_sell_1_price, buy_1_price=okcoin_buy_1_price,
-                                            open_diff=self.open_diff)
-                        else:
-                            executed_qty = self.buy_market(self.coinMarketType, str(0.0002), exchange="okcoin",
-                                            sell_1_price=okcoin_sell_1_price, buy_1_price=okcoin_buy_1_price,
-                                            open_diff=self.open_diff)
+                        executed_qty = self.buy_market(self.coinMarketType, Qty, exchange="okcoin",
+                                        sell_1_price=okcoin_sell_1_price, buy_1_price=okcoin_buy_1_price,
+                                        open_diff=self.open_diff)
 
                         if executed_qty is not None:
                             # step2: 再执行火幣的賣
@@ -189,11 +184,9 @@ class FixedSpreadSignalGenerator(StatArbSignalGenerator):
                         Qty = min(Qty, max(self.huobi_min_quantity, self.okcoin_min_quantity) * self.maximum_qty_multiplier)
 
                     # 每次搬砖前要检查是否有足够security和cash
-                    Qty = min(Qty, accountInfo[helper.coinTypeStructure[self.coinMarketType]["okcoin"]["coin_str"]],
-                            helper.downRound(accountInfo[helper.coinTypeStructure[self.coinMarketType]["huobi"][
-                                "market_str"]] / huobi_sell_1_price), 4)
+                    Qty = min(huobi_sell_1_qty, accountInfo[helper.coinTypeStructure[self.coinMarketType]["okcoin"]["coin_str"]],
+                            accountInfo[helper.coinTypeStructure[self.coinMarketType]["huobi"]["market_str"]])
                     Qty = helper.getRoundedQuantity(Qty, self.coinMarketType)
-
                     if Qty < self.huobi_min_quantity or Qty < self.okcoin_min_quantity:
                         self.timeLog("当前在OKCoin的币量：%.4f，火币的现金：%.2f" % (
                         accountInfo[helper.coinTypeStructure[self.coinMarketType]["okcoin"]["coin_str"]],
@@ -203,7 +196,7 @@ class FixedSpreadSignalGenerator(StatArbSignalGenerator):
                         continue
                     else:
                         # step1: 先处理卖
-                        executed_qty = self.sell_market(self.coinMarketType, str(Qty), exchange="okcoin", 
+                        executed_qty = self.sell_market(self.coinMarketType, Qty, exchange="okcoin", 
                                                         sell_1_price=okcoin_sell_1_price, buy_1_price=okcoin_buy_1_price,
                                                         open_diff=self.open_diff)
                         if executed_qty is not None:
@@ -223,4 +216,11 @@ class FixedSpreadSignalGenerator(StatArbSignalGenerator):
                 else:
                     self.current_position_direction = 0
             except Exception as e:
+                        exc_type, exc_obj, exc_tb = sys.exc_info()
+                        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                        fo = open(fname + ".txt", "a")
+                        fo.write(exc_type)
+                        fo.write(exc_obj)
+                        fo.write(exc_tb)
+                        fo.close()
                         self.timeLog("出現錯誤，重新搬磚！ 錯誤訊息為:" + str(e))

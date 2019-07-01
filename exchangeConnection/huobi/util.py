@@ -88,8 +88,7 @@ def httpRequest(url, params):
     postdata = urllib.parse.urlencode(params)
     # postdata = postdata.encode('utf-8')
     try: 
-        response = requests.post(url, postdata, headers=headers, timeout=20)
-        print(response.json())
+        response = requests.get(url, postdata, headers=headers, timeout=20)
         if response.status_code == 200:
             return response.json()
         else:

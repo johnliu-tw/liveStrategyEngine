@@ -14,10 +14,8 @@ from utils.huobi_account_helper import *
 def getAccountInfo(market, method):
 
     params = {}
-    user_info = api_key_get(params, method)
-    user_id = user_info['data'][0]['id']
-    url = "/v1/account/accounts/{0}/balance".format(user_id)
-    params = {"account-id": user_id}
+    url = '/accounts/balance'
+    
     return api_key_get(params, url)
 
 
@@ -45,7 +43,7 @@ def getOrders(coinType, market, method):
 def getOrderInfo(order_id, market):
 
     params = {}
-    url = "/v1/order/orders/{0}".format(order_id)
+    url = "/orders/btc_twd/{}".format(order_id)
     
     return api_key_get(params, url)
 
@@ -108,22 +106,13 @@ def sell(coinType, price, amount, tradePassword, tradeid, market, method):
 
 def buyMarket(coinType, amount):
 
-    ACCOUNT_INFO = "/v1/account/accounts"
-    params = {}
-    try:
-        user_info = api_key_get(params, ACCOUNT_INFO)
-        user_id = user_info['data'][0]['id']
-    except BaseException as e:
-        print ('get user_id error.%s' % e)
-        user_id = ACCOUNT_ID
-
-    params = {"account-id": str(user_id),
+    params = {"action": 'BUY',
               "amount": str(amount),
-              "symbol": 'btcusdt',
-              "source": "api",
-              "type": "buy-market"}
-
-    url = '/v1/order/orders/place'
+              "price": '1',
+              "timestamp": int(time.time()*1000),
+              "type": "MARKET"}
+    print(params)
+    url = "/orders/btc_twd"
 
     return api_key_post(params, url)
 
@@ -140,22 +129,13 @@ def buyMarket(coinType, amount):
 
 def sellMarket(coinType, amount):
 
-    ACCOUNT_INFO = "/v1/account/accounts"
-    params = {}
-    try:
-        user_info = api_key_get(params, ACCOUNT_INFO)
-        user_id = user_info['data'][0]['id']
-    except BaseException as e:
-        print ('get user_id error.%s' % e)
-        user_id = ACCOUNT_ID
-
-    params = {"account-id": str(user_id),
+    params = {"action": 'SELL',
               "amount": str(amount),
-              "symbol": str(coinType),
-              "source": "api",
-              "type": "sell-market"}
+              "price": '1',
+              "timestamp": int(time.time()*1000),
+              "type": "MARKET"}
 
-    url = '/v1/order/orders/place'
+    url = "/orders/btc_twd"
 
     return api_key_post(params, url)
 
@@ -238,14 +218,7 @@ def getTicker(coinType, market):
 def getDepth(coinType, market, depth_size="step1"):
     if market == COIN_TYPE_CNY:
         if coinType == HUOBI_COIN_TYPE_BTC:
-            url = "https://api.huobi.pro/market/depth?symbol={}&type={}".format("btcusdt", depth_size)
-        else:
-            url = "https://api.huobi.pro/market/depth?symbol={}&type={}".format("ltcusdt", depth_size)
-    elif market == COIN_TYPE_USD:
-        if coinType == HUOBI_COIN_TYPE_BTC:
-            url = "https://api.huobi.pro/usdmarket/depth_btc_" + str(depth_size) + ".js"
-        else:
-            raise ValueError("invalid coinType %d for market %s" % (coinType, market))
+            url = "https://api.bitopro.com/v2/order-book/btc_twd"
     else:
         raise ValueError("invalid market %s" % market)
     if httpRequest(url, {}) == "Timeout":
@@ -265,7 +238,7 @@ def getDepth(coinType, market, depth_size="step1"):
 
 def getMinimumOrderQty(coinType):
     if coinType == HUOBI_COIN_TYPE_BTC:
-        return 0.0001
+        return 0.005
     else:
         return 0.01
 
