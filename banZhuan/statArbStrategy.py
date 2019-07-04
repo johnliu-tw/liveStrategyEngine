@@ -418,6 +418,11 @@ class StatArbSignalGenerator(object):
                 status = self.OKCoinService.cancelOrder(str(order_id), str(order_info["data"]["contractId"]))
                 if status['code'] == 0:
                     return None
+                elif status['msg'] == 'order no exist':
+                    executed_qty = order_info["data"]["quantity"]
+                    self.timeLog("okcoin市价卖单已被执行，执行数量：%f，收到的现金：%.2f" % (
+                        executed_qty, order_info["data"]["filledCurrency"]))
+                    return executed_qty                   
                 else:
                     raise Exception("Cancel error:%s" % status)
             else:
