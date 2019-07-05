@@ -73,7 +73,7 @@ class FixedSpreadSignalGenerator(StatArbSignalGenerator):
                 okcoin_buy_1_qty = okcoinDepth["bids"][0][1]
                 okcoin_balance_price = (float(okcoin_buy_1_price) + float(okcoin_sell_1_price))/2
 
-                self.timeLog("火幣買:%s 火幣賣:%s bita買:%s bita賣:%s" % (huobi_sell_1_price, huobi_buy_1_price, okcoin_sell_1_price, okcoin_buy_1_price))
+                self.timeLog("bito買:%s bito賣:%s bita買:%s bita賣:%s" % (huobi_sell_1_price, huobi_buy_1_price, okcoin_sell_1_price, okcoin_buy_1_price))
                 spread1 = okcoin_balance_price - huobi_sell_1_price
                 spread2 = huobi_buy_1_price - okcoin_balance_price
                 self.spread1List = self.add_to_list(self.spread1List, spread1, 1)
