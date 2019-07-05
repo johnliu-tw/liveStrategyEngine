@@ -130,14 +130,15 @@ class FixedSpreadSignalGenerator(StatArbSignalGenerator):
                     if self.maximum_qty_multiplier is not None:
                         Qty = min(Qty, max(self.huobi_min_quantity, self.okcoin_min_quantity) * self.maximum_qty_multiplier)
                     # 每次搬砖前要检查是否有足够security和cash
-                    Qty = min(huobi_buy_1_qty, accountInfo[helper.coinTypeStructure[self.coinMarketType]["huobi"]["coin_str"]],
-                            accountInfo[helper.coinTypeStructure[self.coinMarketType]["okcoin"]["market_str"]])
+                    Qty = min(huobi_buy_1_qty, 
+                        accountInfo['huobi_cny_btc'],
+                        accountInfo['okcoin_cny_cash'])
                     Qty = helper.downRound(Qty, 4)
                     Qty = helper.getRoundedQuantity(Qty, self.coinMarketType)
                     if Qty < self.huobi_min_quantity or Qty < self.okcoin_min_quantity:
                         self.timeLog("当前在火币的币量：%.4f，OKCoin的现金：%.2f" % (
-                        accountInfo[helper.coinTypeStructure[self.coinMarketType]["huobi"]["coin_str"]],
-                        accountInfo[helper.coinTypeStructure[self.coinMarketType]["okcoin"]["market_str"]]))
+                        accountInfo['huobi_cny_btc'],
+                        accountInfo['okcoin_cny_cash']))
                         self.timeLog("可交易的数量:%.4f 小于交易所最小交易数量(火币最小数量:%.4f, OKCoin最小数量:%.4f),因此无法下单并忽略该信号" % (
                         Qty, self.huobi_min_quantity, self.okcoin_min_quantity), level=logging.WARN)
                         continue
@@ -184,13 +185,14 @@ class FixedSpreadSignalGenerator(StatArbSignalGenerator):
                         Qty = min(Qty, max(self.huobi_min_quantity, self.okcoin_min_quantity) * self.maximum_qty_multiplier)
 
                     # 每次搬砖前要检查是否有足够security和cash
-                    Qty = min(huobi_sell_1_qty, accountInfo[helper.coinTypeStructure[self.coinMarketType]["okcoin"]["coin_str"]],
-                            accountInfo[helper.coinTypeStructure[self.coinMarketType]["huobi"]["market_str"]])
+                    Qty = min(huobi_sell_1_qty, 
+                        accountInfo['okcoin_cny_btc'],
+                        accountInfo['huobi_cny_cash'])
                     Qty = helper.getRoundedQuantity(Qty, self.coinMarketType)
                     if Qty < self.huobi_min_quantity or Qty < self.okcoin_min_quantity:
                         self.timeLog("当前在OKCoin的币量：%.4f，火币的现金：%.2f" % (
-                        accountInfo[helper.coinTypeStructure[self.coinMarketType]["okcoin"]["coin_str"]],
-                        accountInfo[helper.coinTypeStructure[self.coinMarketType]["huobi"]["market_str"]]))
+                        accountInfo['okcoin_cny_btc'],
+                        accountInfo['huobi_cny_cash']))
                         self.timeLog("可交易数量:%.4f 小于交易所最小交易数量(火币最小数量:%.4f, OKCoin最小数量:%.4f),因此无法下单并忽略该信号" % (
                         Qty, self.huobi_min_quantity, self.okcoin_min_quantity), level=logging.WARN)
                         continue
@@ -216,11 +218,4 @@ class FixedSpreadSignalGenerator(StatArbSignalGenerator):
                 else:
                     self.current_position_direction = 0
             except Exception as e:
-                        exc_type, exc_obj, exc_tb = sys.exc_info()
-                        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                        fo = open(fname + ".txt", "a")
-                        fo.write(exc_type)
-                        fo.write(exc_obj)
-                        fo.write(exc_tb)
-                        fo.close()
-                        self.timeLog("出現錯誤，重新搬磚！ 錯誤訊息為:" + str(e))
+                self.timeLog("出現錯誤，重新搬磚！ 錯誤訊息為:" + str(e))
