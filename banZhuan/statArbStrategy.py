@@ -392,44 +392,59 @@ class StatArbSignalGenerator(object):
             order_id = res["msg"]
             # 查询订单执行情况
             time.sleep(1)
-            order_info = self.OKCoinService.orderInfo(str(order_id))
-            print(str(order_info))
-            self.timeLog("下达如下okcoin市价賣单，金额：%s" % order_info["data"]["filledCurrency"])
-            self.timeLog("數量：%s" % quantity)
-
-            retry_time = 0
-            while retry_time < self.okcoin_order_query_retry_maximum_times and order_info["data"]["status"] != 2:
-                self.timeLog("等待%.1f秒直至订单完成" % self.orderWaitingTime)
-                time.sleep(self.orderWaitingTime)
+            try: 
                 order_info = self.OKCoinService.orderInfo(str(order_id))
                 print(str(order_info))
-                # Check Huobi current price
-                huobiDepth = self.HuobiService.getDepth(helper.coinTypeStructure[self.coinMarketType]["huobi"]["coin_type"],
-                                                        helper.coinTypeStructure[self.coinMarketType]["huobi"]["market"],
-                                                        depth_size="step1")
-                huobi_sell_1_price = float(huobiDepth['asks'][0]['price'])  
-                price_diff = order_info['data']['price'] - huobi_sell_1_price
-                if price_diff / huobi_sell_1_price < open_diff:
-                    retry_time = self.okcoin_order_query_retry_maximum_times
-                    break
-                retry_time += 1
+                self.timeLog("下达如下okcoin市价賣单，金额：%s" % order_info["data"]["filledCurrency"])
+                self.timeLog("數量：%s" % quantity)
 
-            if retry_time == self.okcoin_order_query_retry_maximum_times:
-                status = self.OKCoinService.cancelOrder(str(order_id), str(order_info["data"]["contractId"]))
-                if status['code'] == 0:
-                    return None
-                elif status['msg'] == 'order no exist':
+                retry_time = 0
+                while retry_time < self.okcoin_order_query_retry_maximum_times and order_info["data"]["status"] != 2:
+                    self.timeLog("等待%.1f秒直至订单完成" % self.orderWaitingTime)
+                    time.sleep(self.orderWaitingTime)
+                    order_info = self.OKCoinService.orderInfo(str(order_id))
+                    print(str(order_info))
+                    # Check Huobi current price
+                    huobiDepth = self.HuobiService.getDepth(helper.coinTypeStructure[self.coinMarketType]["huobi"]["coin_type"],
+                                                            helper.coinTypeStructure[self.coinMarketType]["huobi"]["market"],
+                                                            depth_size="step1")
+                    huobi_sell_1_price = float(huobiDepth['asks'][0]['price'])  
+                    price_diff = order_info['data']['price'] - huobi_sell_1_price
+                    if price_diff / huobi_sell_1_price < open_diff:
+                        retry_time = self.okcoin_order_query_retry_maximum_times
+                        break
+                    retry_time += 1
+
+                if retry_time == self.okcoin_order_query_retry_maximum_times:
+                    status = self.OKCoinService.cancelOrder(str(order_id), str(order_info["data"]["contractId"]))
+                    if status['code'] == 0:
+                        return None
+                    elif status['msg'] == 'order no exist':
+                        executed_qty = order_info["data"]["quantity"]
+                        self.timeLog("okcoin市价卖单已被执行，执行数量：%f，收到的现金：%.2f" % (
+                            executed_qty, order_info["data"]["filledCurrency"]))
+                        return executed_qty                   
+                    else:
+                        raise Exception("Cancel error:%s" % status)
+                else:
                     executed_qty = order_info["data"]["quantity"]
                     self.timeLog("okcoin市价卖单已被执行，执行数量：%f，收到的现金：%.2f" % (
                         executed_qty, order_info["data"]["filledCurrency"]))
-                    return executed_qty                   
+                    return executed_qty
+            except:
+                self.timeLog("確認是否取消訂單")
+                status = self.OKCoinService.cancelOrder(str(order_id), str(order_info["data"]["contractId"]))
+                if status['code'] == 0:
+                    self.timeLog("取消成功")
+                    return None
+                elif status['code'] == 1 and status['msg'] == 'order no exist':
+                    executed_qty = order_info["data"]["quantity"]
+                    self.timeLog("okcoin市价买单已被执行，执行数量：%f，花费的现金：%.2f" % (
+                        executed_qty, order_info["data"]["price"]))
+                    return executed_qty
                 else:
-                    raise Exception("Cancel error:%s" % status)
-            else:
-                executed_qty = order_info["data"]["quantity"]
-                self.timeLog("okcoin市价卖单已被执行，执行数量：%f，收到的现金：%.2f" % (
-                    executed_qty, order_info["data"]["filledCurrency"]))
-                return executed_qty
+                    self.timeLog("取消失敗: %s" % status)
+                    raise Exception("Cancel error:%s" % status) 
 
     # 限价买单
     def buy_limit(self, security, price, quantity, exchange="huobi"):
@@ -661,7 +676,9 @@ class StatArbSignalGenerator(object):
                     return executed_qty
             except:
                     status = self.OKCoinService.cancelOrder(str(order_id), str(order_info["data"]["contractId"]))
+                    self.timeLog("確認是否取消訂單")
                     if status['code'] == 0:
+                        self.timeLog("取消成功")
                         return None
                     elif status['code'] == 1 and status['msg'] == 'order no exist':
                         executed_qty = order_info["data"]["quantity"]
@@ -669,6 +686,7 @@ class StatArbSignalGenerator(object):
                             executed_qty, order_info["data"]["price"]))
                         return executed_qty
                     else:
+                        self.timeLog("取消失敗: %s" % status)
                         raise Exception("Cancel error:%s" % status)                
 
     # 再平衡仓位
