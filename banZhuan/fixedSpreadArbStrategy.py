@@ -4,6 +4,7 @@
 from banZhuan.statArbStrategy import *
 import os
 import sys
+import traceback
 
 
 ###############################################################
@@ -218,4 +219,9 @@ class FixedSpreadSignalGenerator(StatArbSignalGenerator):
                 else:
                     self.current_position_direction = 0
             except Exception as e:
+
+                cl, exc, tb = sys.exc_info()
+                lastCallStack = traceback.extract_tb(tb) #取得Call Stack的最後一筆資料
+                errMsg = "Traceback: \"{}\" ".format(lastCallStack)
                 self.timeLog("出現錯誤，重新搬磚！ 錯誤訊息為:" + str(e))
+                self.timeLog("錯誤發生位置:" + str(errMsg))
