@@ -150,6 +150,7 @@ class FixedSpreadSignalGenerator(StatArbSignalGenerator):
                                         open_diff=self.open_diff)
 
                         if executed_qty is not None:
+                            executed_qty = int(executed_qty * huobi_buy_1_price)
                             # step2: 再执行火幣的賣
                             executed_qty = self.sell_market(self.coinMarketType, str(executed_qty), exchange="huobi")
                             if self.current_position_direction == 0 or self.current_position_direction == 1:
@@ -205,6 +206,7 @@ class FixedSpreadSignalGenerator(StatArbSignalGenerator):
                         if executed_qty is not None:
                             # step2: 再执行买
                             Qty2 = min(executed_qty, Qty)
+                            Qty2 = int(Qty2 * huobi_sell_1_price)
                             self.buy_market(self.coinMarketType, str(Qty2), exchange="huobi", sell_1_price=huobi_sell_1_price)
                             if self.current_position_direction == 0 or self.current_position_direction == 2:
                                 self.spread2_pos_qty += Qty2
